@@ -13,6 +13,8 @@ namespace Auto_send_platform
     public partial class Form1 : Form
     {
         IniFile inifile = new IniFile(@".\auto_send_platform.ini");
+        DataTable dt_zysf = new DataTable();
+        DataTable dt_mzsf = new DataTable();
         public Form1()
         {
             InitializeComponent();
@@ -20,33 +22,65 @@ namespace Auto_send_platform
 
         private void Form1_Load(object sender, EventArgs e)
         {
+
             int tick = 0;
             string timer = inifile.IniReadValue("setting", "timer","60");
             tick = int.Parse(timer) * 1000;
-
             timer1.Interval = tick;
             timer1.Start();
         }
+        private void LoadDt_mzsf()
+        {
+            string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
 
-        private void timer1_Tick(object sender, EventArgs e)
+            // 门诊收费确认
+            string sql_mzsf = string.Format("select distinct a.rcpt_no, c.health_evn_id from outp_rcpt_master a, outp_order_desc b, clinic_master c where a.rcpt_no = b.rcpt_no and b.clinic_no = c.clinic_no and c.health_evn_id is not null and a.sxjy_flag is null and a.visit_date >= date'{0}' and rownum<100", dt_datetime);
+            dt_mzsf = BaseDB.textExecuteDataset(sql_mzsf);
+            dgv_mzsf.DataSource = dt_mzsf;
+        }
+        private void LoadDt_zysf()
         {
             // 住院收费确认
-            string dt_datetime = inifile.IniReadValue("setting", "start_date",System.DateTime.Now.ToString("yyyy-MM-dd"));
-            
-            string sql_zysf = string.Format("select b.rcpt_no,a.health_evn_id from pat_visit a, inp_settle_master b where a.patient_id = b.patient_id and a.visit_id = b.visit_id and b.settling_date >= date'{0}' and a.health_evn_id is not null and a.flag is null",dt_datetime);
-            DataTable dt_1 = BaseDB.textExecuteDataset(sql_zysf);
-            dataGridView1.DataSource = dt_1;
+            string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
+
+            string sql_zysf = string.Format("select b.rcpt_no,a.health_evn_id from pat_visit a, inp_settle_master b where a.patient_id = b.patient_id and a.visit_id = b.visit_id and b.settling_date >= date'{0}' and a.health_evn_id is not null and a.flag is null and rownum<100", dt_datetime);
+            dt_zysf = BaseDB.textExecuteDataset(sql_zysf);
+            dgv_zysf.DataSource = dt_zysf;
+        }
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (bgw_zysf.IsBusy)
+            {
+                return;
+            }
+            else
+            {
+                bgw_zysf.RunWorkerAsync();
+            }
+
+            if (bgw_mzsf.IsBusy)
+            {
+                return;
+            }
+            else
+                bgw_mzsf.RunWorkerAsync();
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
 
             Func func1 = new Func();
             StringBuilder msg = new StringBuilder();
 
-            if (dt_1.Rows.Count > 0)
+            if (dt_zysf.Rows.Count > 0)
             {
-                
-                foreach (DataRow dr in dt_1.Rows)
+                //int i = 0;
+                //foreach (DataRow dr in dt_1.Rows)
+                for(int i=0; i<dt_zysf.Rows.Count;i++)
                 {
-                    string rcpt_no = dr[0].ToString();
-                    string health_evn_id = dr[1].ToString();
+                    string rcpt_no = dt_zysf.Rows[i][0].ToString();
+                    string health_evn_id = dt_zysf.Rows[i][1].ToString();
 
                     int ret = func1.DC_Payment("4", rcpt_no, health_evn_id, msg);
                     if (1 == ret)
@@ -62,32 +96,75 @@ namespace Auto_send_platform
                         BaseDB.spExecuteNonQuery(sql_update1);
                         Func.WriteLog("住院收费确认发送给舒心就医平台时出错！ " + health_evn_id, "\\interface_his_log\\");
                     }
+                    //i++;
+                    int p = dt_zysf.Rows.Count > 0 ? (i / dt_zysf.Rows.Count) * 100 : 100;
+                    bgw_zysf.ReportProgress(p);
+
                 }
             }
+        }
+
+        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            proB_mzsf.Value = e.ProgressPercentage;
+        }
+
+        private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            LoadDt_zysf();
+        }
+
+       
+
+        private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
+        {
+            #region 门诊收费确认
             // 门诊收费确认
-            string sql_mzsf = string.Format("select distinct a.rcpt_no, c.health_evn_id from outp_rcpt_master a, outp_order_desc b, clinic_master c where a.rcpt_no = b.rcpt_no and b.clinic_no = c.clinic_no and c.health_evn_id is not null and a.sxjy_flag is null and a.visit_date >= date'{0}'",dt_datetime);
-            DataTable dt_2 = BaseDB.textExecuteDataset(sql_mzsf);
-            dataGridView2.DataSource = dt_2;
+            Func func1 = new Func();
+            StringBuilder msg = new StringBuilder();
 
-            foreach (DataRow dr in dt_2.Rows)
+            if (dt_mzsf.Rows.Count > 0)
             {
-                string rcpt_no = dr[0].ToString();
-                string health_evn_id = dr[1].ToString();
 
-                int ret = func1.DC_Payment("1", rcpt_no, health_evn_id, msg);
-                if (1 == ret)
+                //
+                #region 循环取值
+                for (int i = 0; i < dt_mzsf.Rows.Count; i++)
                 {
-                    string sql_update5 = string.Format("update outp_rcpt_master  a  set a.sxjy_flag = '5' where a.rcpt_no  = '{0}'", rcpt_no);
-                    BaseDB.spExecuteNonQuery(sql_update5);
-                    Func.WriteLog("门诊收费确认信息：" + health_evn_id, "\\interface_his_log\\");
+
+                    string rcpt_no = dt_mzsf.Rows[i][0].ToString();
+                    string health_evn_id = dt_mzsf.Rows[i][1].ToString();
+
+                    int ret = func1.DC_Payment("1", rcpt_no, health_evn_id, msg);
+                    if (1 == ret)
+                    {
+                        string sql_update5 = string.Format("update outp_rcpt_master  a  set a.sxjy_flag = '5' where a.rcpt_no  = '{0}'", rcpt_no);
+                        BaseDB.spExecuteNonQuery(sql_update5);
+                        Func.WriteLog("门诊收费确认信息：" + health_evn_id, "\\interface_his_log\\");
+                    }
+                    else
+                    {
+                        string sql_update1 = string.Format("update outp_rcpt_master  a  set a.sxjy_flag = '1' where a.rcpt_no  = '{0}'", rcpt_no);
+                        BaseDB.spExecuteNonQuery(sql_update1);
+                        Func.WriteLog("门诊收费确认发送给舒心就医平台时出错！ " + health_evn_id, "\\interface_his_log\\");
+                    }
+                    //i++;
+                    int p = dt_mzsf.Rows.Count > 0 ? (i / dt_mzsf.Rows.Count) * 100 : 100;
+                    bgw_mzsf.ReportProgress(p);
+
                 }
-                else
-                {
-                    string sql_update1 = string.Format("update outp_rcpt_master  a  set a.sxjy_flag = '1' where a.rcpt_no  = '{0}'", rcpt_no);
-                    BaseDB.spExecuteNonQuery(sql_update1);
-                    Func.WriteLog("门诊收费确认发送给舒心就医平台时出错！ " + health_evn_id, "\\interface_his_log\\");
-                }
+                #endregion
             }
+            #endregion
+        }
+
+        private void backgroundWorker2_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            proB_zysf.Value = e.ProgressPercentage;
+        }
+
+        private void backgroundWorker2_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            LoadDt_mzsf();
         }
     }
 }

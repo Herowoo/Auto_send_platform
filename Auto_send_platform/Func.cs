@@ -6,14 +6,42 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.IO;
+using System.Threading;
 
 namespace Auto_send_platform
 {
     class Func
     {
+        WebReference1.Service service = new WebReference1.Service();
+        static ReaderWriterLockSlim LogWriteLock = new ReaderWriterLockSlim();
+
+        private int HisExePro(string proname,string instr)
+        {
+            service.Timeout = 600000;
+            string result = string.Empty;
+            try
+            {
+                result = service.HisExePro(proname, instr);
+
+            }
+            catch (Exception)
+            {
+
+            }
+            string msg = Split_xml(result, "code");
+            if (msg == "1")
+            {
+                return 1;
+            }
+            else
+            {
+                return -1;
+            }
+
+        }
         public int DC_Payment(string as_type, string as_rcpt_no, string as_health_evn_id, StringBuilder message)
         {
-            WebReference1.Service service = new WebReference1.Service();
+            //WebReference1.Service service = new WebReference1.Service();
             string proname = "dc_payment";
             string instr = "<interface><health_evn_id>" + as_health_evn_id + "</health_evn_id><in_type>" + as_type + "</in_type><in_rcpt_no>" + as_rcpt_no + "</in_rcpt_no></interface>";
             string result = service.HisExePro(proname, instr);
@@ -27,49 +55,23 @@ namespace Auto_send_platform
         }
         public int DC_File_Query(string as_id_no,StringBuilder message)
         {
-            WebReference1.Service service = new WebReference1.Service();
             string proname = "dc_file_query";
             string instr = "<interface><IdNo>" + as_id_no + "</IdNo></interface>";
-            string result = service.HisExePro(proname, instr);
-            string msg = Split_xml(result, "code");
-            if (msg == "1")
-            {
-                return 1;
-            }
-            else
-            {
-                return -1;
-            }
+            return HisExePro(proname, instr);
         }
         public int DC_File_Add(string patient_id, string username, StringBuilder message)
         {
-            WebReference1.Service service = new WebReference1.Service();
             string proname = "dc_file_add";
             string instr = "<interface><PatientId>" + patient_id + "</PatientId><OperatorName>" + username + "</OperatorName></interface>";
-            string result = service.HisExePro(proname, instr);
-            string msg = Split_xml(result, "code");
-            if (msg == "1")
-            {
-                return 1;
-            }
-            else
-                return -1;
+            return HisExePro(proname, instr);
+
         }
         public int DC_CheckIn(string as_type,string as_patientstrno,StringBuilder message)
         {
-            WebReference1.Service service = new WebReference1.Service();
             string proname = "dc_checkin";
             string instr = "<interface><in_type>" + as_type + "</in_type><in_patientstrno>" + as_patientstrno + "</in_patientstrno></interface>";
-            string result = service.HisExePro(proname, instr);
-            string msg = Split_xml(result, "code");
-            if (msg == "1")
-            {
-                return 1;
-            }
-            else
-            {
-                return -1;
-            }
+
+            return HisExePro(proname, instr);
         }
         public int DC_ipconfirm(string patientstrno,StringBuilder message)
         {
@@ -118,22 +120,35 @@ namespace Auto_send_platform
         /// <param name="rpath">相对路径</param>
         public static void WriteLog(string str,string rpath)
         {
-            DateTime d = DateTime.Now;
-            string path = AppDomain.CurrentDomain.BaseDirectory + rpath;
-            string fileName = d.ToString("yyyy-MM-dd-HH") + "platformlog.txt";
-
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-
-            using (StreamWriter file = new StreamWriter(path + fileName, true))
+            try
             {
-                if (string.IsNullOrEmpty(str))
-                    file.WriteLine("");
-                else
+                LogWriteLock.EnterWriteLock();
+
+                DateTime d = DateTime.Now;
+                string path = AppDomain.CurrentDomain.BaseDirectory + rpath;
+                string fileName = d.ToString("yyyy-MM-dd-HH") + "platformlog.txt";
+
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+
+                using (StreamWriter file = new StreamWriter(path + fileName, true))
                 {
-                    file.WriteLine(d.ToString("yyyy-MM-dd HH:mm:ss"));
-                    file.WriteLine(str);
+                    if (string.IsNullOrEmpty(str))
+                        file.WriteLine("");
+                    else
+                    {
+                        file.WriteLine(d.ToString("yyyy-MM-dd HH:mm:ss"));
+                        file.WriteLine(str);
+                    }
                 }
+            }
+            catch (Exception)
+            {
+
+            }
+            finally
+            {
+                LogWriteLock.ExitWriteLock();
             }
         }
     }

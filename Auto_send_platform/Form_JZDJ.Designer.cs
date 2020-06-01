@@ -39,6 +39,11 @@
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.dgv_ipconfirm = new System.Windows.Forms.DataGridView();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.bgw_fileinfo = new System.ComponentModel.BackgroundWorker();
+            this.bgw_checkin = new System.ComponentModel.BackgroundWorker();
+            this.bgw_ipconfirm = new System.ComponentModel.BackgroundWorker();
+            this.bgw_opconfirm = new System.ComponentModel.BackgroundWorker();
+            this.bgw_loaddata = new System.ComponentModel.BackgroundWorker();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgv_fileinfo)).BeginInit();
@@ -148,6 +153,31 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // bgw_fileinfo
+            // 
+            this.bgw_fileinfo.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_fileinfo_DoWork);
+            this.bgw_fileinfo.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_fileinfo_RunWorkerCompleted);
+            // 
+            // bgw_checkin
+            // 
+            this.bgw_checkin.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_checkin_DoWork);
+            this.bgw_checkin.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_checkin_RunWorkerCompleted);
+            // 
+            // bgw_ipconfirm
+            // 
+            this.bgw_ipconfirm.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_ipconfirm_DoWork);
+            this.bgw_ipconfirm.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_ipconfirm_RunWorkerCompleted);
+            // 
+            // bgw_opconfirm
+            // 
+            this.bgw_opconfirm.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_opconfirm_DoWork);
+            this.bgw_opconfirm.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_opconfirm_RunWorkerCompleted);
+            // 
+            // bgw_loaddata
+            // 
+            this.bgw_loaddata.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_loaddata_DoWork);
+            this.bgw_loaddata.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_loaddata_RunWorkerCompleted);
+            // 
             // Form_JZDJ
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -182,5 +212,10 @@
         private System.Windows.Forms.DataGridView dgv_opconfirm;
         private System.Windows.Forms.DataGridView dgv_ipconfirm;
         private System.Windows.Forms.Timer timer1;
+        private System.ComponentModel.BackgroundWorker bgw_fileinfo;
+        private System.ComponentModel.BackgroundWorker bgw_checkin;
+        private System.ComponentModel.BackgroundWorker bgw_ipconfirm;
+        private System.ComponentModel.BackgroundWorker bgw_opconfirm;
+        private System.ComponentModel.BackgroundWorker bgw_loaddata;
     }
 }
