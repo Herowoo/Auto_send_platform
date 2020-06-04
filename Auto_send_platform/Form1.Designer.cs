@@ -39,6 +39,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.bgw_zysf = new System.ComponentModel.BackgroundWorker();
             this.bgw_mzsf = new System.ComponentModel.BackgroundWorker();
+            this.bgw_load = new System.ComponentModel.BackgroundWorker();
             this.tab_mzsf.SuspendLayout();
             this.tabPage1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgv_mzsf)).BeginInit();
@@ -132,6 +133,11 @@
             this.bgw_mzsf.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker2_ProgressChanged);
             this.bgw_mzsf.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker2_RunWorkerCompleted);
             // 
+            // bgw_load
+            // 
+            this.bgw_load.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_load_DoWork);
+            this.bgw_load.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_load_RunWorkerCompleted);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -162,6 +168,7 @@
         private System.ComponentModel.BackgroundWorker bgw_mzsf;
         private System.Windows.Forms.ProgressBar proB_mzsf;
         private System.Windows.Forms.ProgressBar proB_zysf;
+        private System.ComponentModel.BackgroundWorker bgw_load;
     }
 }
 

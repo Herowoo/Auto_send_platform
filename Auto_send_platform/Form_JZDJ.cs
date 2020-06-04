@@ -226,7 +226,7 @@ namespace Auto_send_platform
         {
             string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
             StringBuilder msg = new StringBuilder();
-            string sql_opconfirm = string.Format("select '0' in_type,to_char(t.visit_date,'yyyymmdd')||t.visit_no in_patientstrno from clinic_master t where t.visit_date >= date'{0}'  and  t.flag = '1'   and (t.visit_date,t.visit_no) in (select  a.visit_date,a.visit_no from outp_wait_queue a where a.worked_indicator = 3)", dt_datetime);
+            string sql_opconfirm = string.Format("select '0' in_type,clinic_no in_patientstrno from clinic_master t where t.visit_date >= date'{0}'  and  t.flag = '1'  and (t.visit_date,t.visit_no) in (select  a.visit_date,a.visit_no from outp_wait_queue a where a.worked_indicator = 3)", dt_datetime);
             dt_opconfirm = BaseDB.textExecuteDataset(sql_opconfirm);
             #region 门诊就诊确认
 
@@ -240,7 +240,7 @@ namespace Auto_send_platform
                     int ret = new Func().DC_opconfirm(in_type, in_patientstrno, msg);
                     if (1 == ret)
                     {
-                        string sql = string.Format("update clinic_master a  set a.flag = '5' where to_char(a.visit_date,'yyyymmdd')||a.visit_no = '{0}'", in_patientstrno);
+                        string sql = string.Format("update clinic_master a  set a.flag = '5' where clinic_no = '{0}'", in_patientstrno);
                         BaseDB.spExecuteNonQuery(sql);
                         Func.WriteLog("门诊就诊确认信息：" + in_patientstrno, "\\interface_his_log\\");
 

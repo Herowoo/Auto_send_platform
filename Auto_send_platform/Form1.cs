@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -22,12 +23,19 @@ namespace Auto_send_platform
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            if (bgw_load.IsBusy)
+            {
 
-            int tick = 0;
-            string timer = inifile.IniReadValue("setting", "timer","60");
-            tick = int.Parse(timer) * 1000;
-            timer1.Interval = tick;
-            timer1.Start();
+            }
+            else
+            {
+                bgw_load.RunWorkerAsync();
+            }
+            //int tick = 0;
+            //string timer = inifile.IniReadValue("setting", "timer","60");
+            //tick = int.Parse(timer) * 1000;
+            //timer1.Interval = tick;
+            //timer1.Start();
         }
         private void LoadDt_mzsf()
         {
@@ -36,7 +44,6 @@ namespace Auto_send_platform
             // 门诊收费确认
             string sql_mzsf = string.Format("select distinct a.rcpt_no, c.health_evn_id from outp_rcpt_master a, outp_order_desc b, clinic_master c where a.rcpt_no = b.rcpt_no and b.clinic_no = c.clinic_no and c.health_evn_id is not null and a.sxjy_flag is null and a.visit_date >= date'{0}' and rownum<100", dt_datetime);
             dt_mzsf = BaseDB.textExecuteDataset(sql_mzsf);
-            dgv_mzsf.DataSource = dt_mzsf;
         }
         private void LoadDt_zysf()
         {
@@ -45,13 +52,11 @@ namespace Auto_send_platform
 
             string sql_zysf = string.Format("select b.rcpt_no,a.health_evn_id from pat_visit a, inp_settle_master b where a.patient_id = b.patient_id and a.visit_id = b.visit_id and b.settling_date >= date'{0}' and a.health_evn_id is not null and a.flag is null and rownum<100", dt_datetime);
             dt_zysf = BaseDB.textExecuteDataset(sql_zysf);
-            dgv_zysf.DataSource = dt_zysf;
         }
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (bgw_zysf.IsBusy)
             {
-                return;
             }
             else
             {
@@ -60,7 +65,7 @@ namespace Auto_send_platform
 
             if (bgw_mzsf.IsBusy)
             {
-                return;
+
             }
             else
                 bgw_mzsf.RunWorkerAsync();
@@ -68,15 +73,13 @@ namespace Auto_send_platform
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
-            string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
-
+            //string dt_datetime = inifile.IniReadValue("setting", "start_date", System.DateTime.Now.ToString("yyyy-MM-dd"));
+            Func.WriteLog("backgroundWorker1_DoWork", "\\interface_his_log\\");
             Func func1 = new Func();
             StringBuilder msg = new StringBuilder();
 
             if (dt_zysf.Rows.Count > 0)
             {
-                //int i = 0;
-                //foreach (DataRow dr in dt_1.Rows)
                 for(int i=0; i<dt_zysf.Rows.Count;i++)
                 {
                     string rcpt_no = dt_zysf.Rows[i][0].ToString();
@@ -96,28 +99,29 @@ namespace Auto_send_platform
                         BaseDB.spExecuteNonQuery(sql_update1);
                         Func.WriteLog("住院收费确认发送给舒心就医平台时出错！ " + health_evn_id, "\\interface_his_log\\");
                     }
-                    //i++;
-                    int p = dt_zysf.Rows.Count > 0 ? (i / dt_zysf.Rows.Count) * 100 : 100;
-                    bgw_zysf.ReportProgress(p);
-
                 }
             }
         }
 
         private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            proB_mzsf.Value = e.ProgressPercentage;
         }
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            Func.WriteLog("backgroundWorker1_RunWorkerCompleted", "\\interface_his_log\\");
+
             LoadDt_zysf();
+            dgv_zysf.DataSource = dt_zysf;
+            bgw_zysf.RunWorkerAsync();
         }
 
        
 
         private void backgroundWorker2_DoWork(object sender, DoWorkEventArgs e)
         {
+            Func.WriteLog("backgroundWorker2_DoWork", "\\interface_his_log\\");
+
             #region 门诊收费确认
             // 门诊收费确认
             Func func1 = new Func();
@@ -125,12 +129,10 @@ namespace Auto_send_platform
 
             if (dt_mzsf.Rows.Count > 0)
             {
-
                 //
                 #region 循环取值
                 for (int i = 0; i < dt_mzsf.Rows.Count; i++)
                 {
-
                     string rcpt_no = dt_mzsf.Rows[i][0].ToString();
                     string health_evn_id = dt_mzsf.Rows[i][1].ToString();
 
@@ -147,24 +149,61 @@ namespace Auto_send_platform
                         BaseDB.spExecuteNonQuery(sql_update1);
                         Func.WriteLog("门诊收费确认发送给舒心就医平台时出错！ " + health_evn_id, "\\interface_his_log\\");
                     }
-                    //i++;
-                    int p = dt_mzsf.Rows.Count > 0 ? (i / dt_mzsf.Rows.Count) * 100 : 100;
-                    bgw_mzsf.ReportProgress(p);
-
                 }
                 #endregion
+            }
+            else
+            {
+                Thread.Sleep(3000);
             }
             #endregion
         }
 
         private void backgroundWorker2_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            proB_zysf.Value = e.ProgressPercentage;
         }
 
         private void backgroundWorker2_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            Func.WriteLog("backgroundWorker2_RunWorkerCompleted", "\\interface_his_log\\");
+
             LoadDt_mzsf();
+            dgv_mzsf.DataSource = dt_mzsf;
+            bgw_mzsf.RunWorkerAsync();
+        }
+
+        private void bgw_load_DoWork(object sender, DoWorkEventArgs e)
+        {
+            Func.WriteLog("bgw_load_DoWork", "\\interface_his_log\\");
+
+            LoadDt_mzsf();
+            LoadDt_zysf();
+        }
+
+        private void bgw_load_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Func.WriteLog("bgw_load_RunWorkerCompleted", "\\interface_his_log\\");
+
+            dgv_mzsf.DataSource = dt_mzsf;
+            dgv_zysf.DataSource = dt_zysf;
+
+            if (bgw_mzsf.IsBusy)
+            {
+
+            }
+            else
+            {
+                bgw_mzsf.RunWorkerAsync();
+            }
+
+            if (bgw_zysf.IsBusy)
+            {
+
+            }
+            else
+            {
+                bgw_zysf.RunWorkerAsync();
+            }
         }
     }
 }

@@ -41,7 +41,7 @@ namespace Auto_send_platform
         public string IniReadValue(string Section, string Key,string def)
         {
             StringBuilder temp = new StringBuilder(255);
-            int i = GetPrivateProfileString(Section, Key, "", temp, 255, this.path);
+            int i = GetPrivateProfileString(Section, Key, def, temp, 255, this.path);
             return temp.ToString();
         }
     }
